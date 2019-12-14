@@ -21,7 +21,66 @@ describe(`Folders Endpoints`, function () {
 
     afterEach('cleanup', () => db.raw('TRUNCATE folders, notes RESTART IDENTITY CASCADE'))
 
-    context(`Given there are folders in the database`, () => {
+    describe('GET /folders', () => {
+        context(`Given no folders`, () => {
+
+            it(`responds with 200 and an empty list`, () => {
+                return supertest(app)
+                    .get('/folders')
+                    .expect(200, [])
+            })
+        })
+
+        context(`Given there are folders in the database`, () => {
+            const testFolders = makeFoldersArray()
+
+            beforeEach(() => {
+                return db
+                    .into('folders')
+                    .insert(testFolders)
+            })
+
+            it(`GET /folders responds with 200 and all of the folders`, () => {
+                //test the FoldersService.getAllFolders getsd data from table
+                return supertest(app)
+                    .get('/folders')
+                    .expect(200, testFolders)
+            })
+        })
+    })
+
+    describe('GET /notes/notes_id', () => {
+
+        context(`Given no folders`, () => {
+            it(`Responds with 404`, () => {
+                const folderId = 123456
+                return supertest(app)
+                    .get(`/folders/${folderId}`)
+                    .expect(404, { error: { message: `Folder doesn't exist` } })
+            })
+        })
+
+        context(`Given there are folders in the database`, () => {
+            const testFolders = makeFoldersArray()
+
+            beforeEach(() => {
+                return db
+                    .into('folders')
+                    .insert(testFolders)
+            })
+
+            it(`responds with 200 and the specified folder`, () => {
+                const folderId = 3
+                const expectedFolder = testFolders[folderId - 1]
+
+                return supertest(app)
+                    .get(`/folders/${folderId}`)
+                    .expect(200, expectedFolder)
+            })
+        })
+    })
+
+    describe.only(`POST /folders`, () => {
         const testFolders = makeFoldersArray()
 
         beforeEach(() => {
@@ -30,42 +89,23 @@ describe(`Folders Endpoints`, function () {
                 .insert(testFolders)
         })
 
-        it(`GET /folders responds with 200 and all of the folders`, () => {
-            //test the FoldersService.getAllFolders getsd data from table
-            return supertest(app)
-                .get('/folders')
-                .expect(200, testFolders)
-        })
-
-        it(`GET /folders/:folder_id responds with 200 and the specified folder`, () => {
-            const folderId = 3
-            const expectedFolder = testFolders[folderId - 1]
-
-            return supertest(app)
-                .get(`/folders/${folderId}`)
-                .expect(200, expectedFolder)
-        })
-    })
-
-    context(`Given 'folders' has no data`, () => {
-        it(`getAllFolders() resolves an empty array`, () => {
-            return FoldersService.getAllFolders(db)
-                .then(actual => {
-                    expect(actual).to.eql([])
-                })
-        })
-
-        it(`insertFolders() inserts a new folder and resolves the new folder with an 'id'`, () => {
+        it(`creates a folder, responding with 201 and the new folder`, function () {
             const newFolder = {
-                folder_name: 'Test new folder name',
+                folder_name: 'Test new folder',
             }
-            return FoldersService.insertFolder(db, newFolder)
-                .then(actual => {
-                    expect(actual).to.eql({
-                        id: 1,
-                        folder_name: newFolder.folder_name,
-                    })
+            return supertest(app)
+                .post('/folders')
+                .send(newFolder)
+                .expect(res => {
+                    expect(res.body.folder_name).to.eql(newFolder.folder_name)
+                    expect(res.body).to.have.property('id')
                 })
+                .then(postRes =>
+                    supertest(app)
+                        .get(`/folders/${postRes.body.id}`)
+                        .expect(postRes.body)
+                )
         })
     })
+
 })
