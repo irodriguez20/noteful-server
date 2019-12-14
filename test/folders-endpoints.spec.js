@@ -1,6 +1,5 @@
 require('dotenv').config()
 const app = require('../src/app')
-const FoldersService = require('../src/folders/folders-service')
 const knex = require('knex')
 const { makeFoldersArray } = require('./folders-fixtures')
 
@@ -80,14 +79,7 @@ describe(`Folders Endpoints`, function () {
         })
     })
 
-    describe.only(`POST /folders`, () => {
-        const testFolders = makeFoldersArray()
-
-        beforeEach(() => {
-            return db
-                .into('folders')
-                .insert(testFolders)
-        })
+    describe(`POST /folders`, () => {
 
         it(`creates a folder, responding with 201 and the new folder`, function () {
             const newFolder = {
@@ -96,14 +88,15 @@ describe(`Folders Endpoints`, function () {
             return supertest(app)
                 .post('/folders')
                 .send(newFolder)
+                .expect(201)
                 .expect(res => {
                     expect(res.body.folder_name).to.eql(newFolder.folder_name)
                     expect(res.body).to.have.property('id')
                 })
-                .then(postRes =>
+                .then(res =>
                     supertest(app)
-                        .get(`/folders/${postRes.body.id}`)
-                        .expect(postRes.body)
+                        .get(`/folders/${res.body.id}`)
+                        .expect(res.body)
                 )
         })
     })

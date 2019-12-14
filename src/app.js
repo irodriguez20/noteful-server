@@ -22,13 +22,7 @@ app.get('/notes', (req, res, next) => {
     const knexInstance = req.app.get('db')
     NotesService.getAllNotes(knexInstance)
         .then(notes => {
-            res.json(notes.map(note => ({
-                id: note.id,
-                name: note.name,
-                modified: note.modified,
-                folderid: note.folderid,
-                content: note.content,
-            })))
+            res.json(notes)
         })
         .catch(next)
 })
@@ -55,10 +49,7 @@ app.post('/notes', jsonParser, (req, res, next) => {
         newNote
     )
         .then(note => {
-            res
-                .status(201)
-                .location(`/notes/${note.id}`)
-                .json(note)
+            res.status(201).location(`/notes/${note.id}`).json(note)
         })
         .catch(next)
 })
@@ -67,11 +58,9 @@ app.get('/folders', (req, res, next) => {
     const knexInstance = req.app.get('db')
     FoldersService.getAllFolders(knexInstance)
         .then(folders => {
-            res.json(folders.map(folder => ({
-                id: folder.id,
-                folder_name: folder.folder_name,
-            })))
+            res.json(folders)
         })
+        .catch(next)
 })
 
 app.get('/folders/:folder_id', (req, res, next) => {
@@ -89,6 +78,7 @@ app.get('/folders/:folder_id', (req, res, next) => {
 })
 
 app.post('/folders', jsonParser, (req, res, next) => {
+    console.log('req', req)
     const { folder_name } = req.body
     const newFolder = { folder_name }
     FoldersService.insertFolder(
