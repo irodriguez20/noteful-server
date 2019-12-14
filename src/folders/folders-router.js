@@ -31,7 +31,7 @@ foldersRouter
             .then(folder => {
                 res
                     .status(201)
-                    .location(`/folders/${folder.id}`)
+                    .location(`/api/folders/${folder.id}`)
                     .json(folder)
             })
             .catch(next)

@@ -20,12 +20,12 @@ describe(`Folders Endpoints`, function () {
 
     afterEach('cleanup', () => db.raw('TRUNCATE folders, notes RESTART IDENTITY CASCADE'))
 
-    describe('GET /folders', () => {
+    describe('GET /api/folders', () => {
         context(`Given no folders`, () => {
 
             it(`responds with 200 and an empty list`, () => {
                 return supertest(app)
-                    .get('/folders')
+                    .get('/api/folders')
                     .expect(200, [])
             })
         })
@@ -39,22 +39,22 @@ describe(`Folders Endpoints`, function () {
                     .insert(testFolders)
             })
 
-            it(`GET /folders responds with 200 and all of the folders`, () => {
+            it(`GET /api/folders responds with 200 and all of the folders`, () => {
                 //test the FoldersService.getAllFolders getsd data from table
                 return supertest(app)
-                    .get('/folders')
+                    .get('/api/folders')
                     .expect(200, testFolders)
             })
         })
     })
 
-    describe('GET /notes/notes_id', () => {
+    describe('GET /api/notes/api/notes_id', () => {
 
         context(`Given no folders`, () => {
             it(`Responds with 404`, () => {
                 const folderId = 123456
                 return supertest(app)
-                    .get(`/folders/${folderId}`)
+                    .get(`/api/folders/${folderId}`)
                     .expect(404, { error: { message: `Folder doesn't exist` } })
             })
         })
@@ -73,20 +73,20 @@ describe(`Folders Endpoints`, function () {
                 const expectedFolder = testFolders[folderId - 1]
 
                 return supertest(app)
-                    .get(`/folders/${folderId}`)
+                    .get(`/api/folders/${folderId}`)
                     .expect(200, expectedFolder)
             })
         })
     })
 
-    describe(`POST /folders`, () => {
+    describe(`POST /api/folders`, () => {
 
         it(`creates a folder, responding with 201 and the new folder`, function () {
             const newFolder = {
                 folder_name: 'Test new folder',
             }
             return supertest(app)
-                .post('/folders')
+                .post('/api/folders')
                 .send(newFolder)
                 .expect(201)
                 .expect(res => {
@@ -95,14 +95,14 @@ describe(`Folders Endpoints`, function () {
                 })
                 .then(res =>
                     supertest(app)
-                        .get(`/folders/${res.body.id}`)
+                        .get(`/api/folders/${res.body.id}`)
                         .expect(res.body)
                 )
         })
 
         it(`responds with 400 and an error message when the 'folder_name' is missing`, () => {
             return supertest(app)
-                .post('/folders')
+                .post('/api/folders')
                 .send({})
                 .expect(400, {
                     error: { message: `Missing 'folder_name' in request body` }
