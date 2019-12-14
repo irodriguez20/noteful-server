@@ -1,5 +1,6 @@
 require('dotenv').config
 const express = require('express')
+const xss = require('xss')
 const NotesService = require('./notes-service')
 
 const notesRouter = express.Router()
@@ -20,9 +21,9 @@ notesRouter
         const newNote = { name, folderid, content }
 
         for (const [key, value] of Object.entries(newNote)) {
-            if (value === null) {
+            if (value == null) {
                 return res.status(400).json({
-                    error: { message: `Missing '${key} in request body` }
+                    error: { message: `Missing '${key}' in request body` }
                 })
             }
         }
@@ -48,7 +49,13 @@ notesRouter
                         error: { message: `Note doesn't exist` }
                     })
                 }
-                res.json(note)
+                res.json({
+                    id: note.id,
+                    name: xss(note.name),
+                    modified: note.modified,
+                    folderid: note.folderid,
+                    content: xss(note.content),
+                })
             })
             .catch(next)
     })

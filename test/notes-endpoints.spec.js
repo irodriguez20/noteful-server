@@ -98,9 +98,40 @@ describe(`Notes Endpoints`, function () {
                     .expect(200, expectedNote);
             });
         });
+
+        context(`Given an XSS attach article`, () => {
+            const testFolders = makeFoldersArray();
+            const maliciousNote = {
+                id: 911,
+                name: 'Naughty naughty very naughty <script>alert("xss");</script>',
+                folderid: 3,
+                content: `Bad image <img src="https://url.to.file.which/does-not.exist" onerror="alert(document.cookie);">. But not <strong>all</strong> bad.`
+            }
+
+            beforeEach('insert malicious note', () => {
+                return db
+                    .into("folders")
+                    .insert(testFolders)
+                    .then(() => {
+                        return db
+                            .into('notes')
+                            .insert([maliciousNote])
+                    })
+            })
+
+            it('removes XSS attack content', () => {
+                return supertest(app)
+                    .get(`/notes/${maliciousNote.id}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body.name).to.eq('Naughty naughty very naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;')
+                        expect(res.body.content).to.eq(`Bad image <img src="https://url.to.file.which/does-not.exist">. But not <strong>all</strong> bad.`)
+                    })
+            })
+        })
     });
 
-    describe.only(`POST /notes`, () => {
+    describe(`POST /notes`, () => {
         const testFolders = makeFoldersArray();
 
         beforeEach("insert folders and notes", () => {
