@@ -1,31 +1,56 @@
 require('dotenv').config
-const knex = require('knex')
+const express = require('express')
 const NotesService = require('./notes-service')
 
-const knexInstance = knex({
-    client: 'pg',
-    connection: process.env.DB_URL,
-})
+const notesRouter = express.Router()
+const jsonParser = express.json()
 
-NotesService.getAllNotes(knexInstance)
-    .then(notes => console.log(notes))
-    .then(() =>
-        NotesService.insertNote(knexInstance, {
-            name: 'New name',
-            modified: new Date(),
-            folderid: 2,
-            content: 'New content',
-        })
-    )
-    .then(newNote => {
-        console.log(newNote)
-        return NotesService.updateNote(
-            knexInstance,
-            newNote.id,
-            { name: 'Updated name' }
-        ).then(() => NotesService.getById(knexInstance, newNote.id))
+
+notesRouter
+    .route('/')
+    .get((req, res, next) => {
+        NotesService.getAllNotes(req.app.get('db'))
+            .then(notes => {
+                res.json(notes)
+            })
+            .catch(next)
     })
-    .then(note => {
-        console.log(note)
-        return NotesService.deleteNote(knexInstance, note.id)
+    .post(jsonParser, (req, res, next) => {
+        const { name, folderid, content } = req.body
+        const newNote = { name, folderid, content }
+
+        for (const [key, value] of Object.entries(newNote)) {
+            if (value === null) {
+                return res.status(400).json({
+                    error: { message: `Missing '${key} in request body` }
+                })
+            }
+        }
+
+        NotesService.insertNote(
+            req.app.get('db'),
+            newNote
+        )
+            .then(note => {
+                res.status(201).location(`/notes/${note.id}`).json(note)
+            })
+            .catch(next)
     })
+
+notesRouter
+    .route('/:note_id')
+    .get((req, res, next) => {
+        const knexInstance = req.app.get('db')
+        NotesService.getById(knexInstance, req.params.note_id)
+            .then(note => {
+                if (!note) {
+                    return res.status(404).json({
+                        error: { message: `Note doesn't exist` }
+                    })
+                }
+                res.json(note)
+            })
+            .catch(next)
+    })
+
+module.exports = notesRouter

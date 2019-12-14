@@ -1,28 +1,56 @@
 require('dotenv').config
-const knex = require('knex')
 const FoldersService = require('./folders-service')
+const express = require('express')
 
-const knexInstance = knex({
-    client: 'pg',
-    connection: process.env.DB_URL,
-})
+const foldersRouter = express.Router()
+const jsonParser = express.json()
 
-FoldersService.getAllFolders(knexInstance)
-    .then(folders => console.log(notes))
-    .then(() =>
-        FoldersService.insertFolder(knexInstance, {
-            folder_name: 'new folder name,'
-        })
-    )
-    .then(newFolder => {
-        console.log(newFolder)
-        return FoldersService.updateFolder(
-            knexInstance,
-            newFolder.id,
-            { name: 'Updated name' }
-        ).then(() => FoldersService.getById(knexInstance, newFolder.id))
+foldersRouter
+    .route('/')
+    .get((req, res, next) => {
+        FoldersService.getAllFolders(req.app.get('db'))
+            .then(folders => {
+                res.json(folders)
+            })
+            .catch(next)
     })
-    .then(folder => {
-        console.log(folder)
-        return FoldersService.deleteFolder(knexInstance, folder.id)
+    .post(jsonParser, (req, res, next) => {
+        const { folder_name } = req.body
+        const newFolder = { folder_name }
+
+        if (!folder_name) {
+            return res.status(400).json({
+                error: { message: `Missing 'folder_name' in request body` }
+            })
+        }
+
+        FoldersService.insertFolder(
+            req.app.get('db'),
+            newFolder
+        )
+            .then(folder => {
+                res
+                    .status(201)
+                    .location(`/folders/${folder.id}`)
+                    .json(folder)
+            })
+            .catch(next)
     })
+
+foldersRouter
+    .route('/:folder_id')
+    .get((req, res, next) => {
+        const knexInstance = req.app.get('db')
+        FoldersService.getById(knexInstance, req.params.folder_id)
+            .then(folder => {
+                if (!folder) {
+                    return res.status(404).json({
+                        error: { message: `Folder doesn't exist` }
+                    })
+                }
+                res.json(folder)
+            })
+            .catch(next)
+    })
+
+module.exports = foldersRouter

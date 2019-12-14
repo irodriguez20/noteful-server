@@ -100,9 +100,8 @@ describe(`Notes Endpoints`, function () {
         });
     });
 
-    describe(`POST /notes`, () => {
+    describe.only(`POST /notes`, () => {
         const testFolders = makeFoldersArray();
-        const testNotes = makeNotesArray();
 
         beforeEach("insert folders and notes", () => {
             return db
@@ -140,5 +139,26 @@ describe(`Notes Endpoints`, function () {
                         .expect(res.body)
                 );
         });
+
+        const requiredFields = ['name', 'folderid', 'content']
+
+        requiredFields.forEach(field => {
+            const newNote = {
+                name: 'Test new note',
+                folderid: 1,
+                content: 'Test new note content...'
+            }
+
+            it(`responds with 400 and an error message when the '${field}' is missing`, () => {
+                delete newNote[field]
+
+                return supertest(app)
+                    .post('/notes')
+                    .send(newNote)
+                    .expect(400, {
+                        error: { message: `Missing '${field}' in request body` }
+                    })
+            })
+        })
     });
 });

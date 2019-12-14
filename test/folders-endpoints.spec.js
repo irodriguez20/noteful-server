@@ -99,6 +99,15 @@ describe(`Folders Endpoints`, function () {
                         .expect(res.body)
                 )
         })
+
+        it(`responds with 400 and an error message when the 'folder_name' is missing`, () => {
+            return supertest(app)
+                .post('/folders')
+                .send({})
+                .expect(400, {
+                    error: { message: `Missing 'folder_name' in request body` }
+                })
+        })
     })
 
 })
