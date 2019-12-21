@@ -15,9 +15,14 @@ const morganOption = (NODE_ENV === 'production')
     ? 'tiny'
     : 'common';
 
+const corsOptions = {
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE", "preflightContinue": true, "optionsSuccessStatus": 204
+}
+
 app.use(morgan(morganOption))
 app.use(helmet())
-app.use(cors())
+app.use(cors(corsOptions))
 
 app.use('/api/notes', notesRouter)
 
