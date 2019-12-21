@@ -153,7 +153,7 @@ describe(`Notes Endpoints`, function () {
                 .send(newNote)
                 // .expect(201)
                 .expect(res => {
-                    console.log('expect response body', res.body)
+
                     expect(res.body.name).to.eql(newNote.name);
                     // expect(res.body.modified).to.eql(newNote.modified)
                     expect(res.body.folderid).to.eql(newNote.folderid);
